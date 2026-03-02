@@ -1,0 +1,106 @@
+/*
+ * Copyright 2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+plugins {
+    groovy
+    idea
+    `java-gradle-plugin`
+    id("com.gradle.plugin-publish") version "0.20.0"
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = "org.gradle.crypto"
+version = "1.5.0-SNAPSHOT"
+
+// Fix a bad interaction with IntelliJ and Gradle > 4.0
+idea.module.inheritOutputDirs = true
+
+// make the publishing plugin skip checks that disallow publishing to com.gradle / org.gradle groups
+System.setProperty("gradle.publish.skip.namespace.check", "true")
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter("5.7.1")
+        }
+
+        val functionalTest by registering(JvmTestSuite::class) {
+            sources {
+                java {
+                    setSrcDirs(listOf("src/functionalTest/groovy"))
+                }
+            }
+
+            dependencies {
+                implementation(project)
+                implementation("org.spockframework:spock-junit4:2.0-groovy-3.0")
+                implementation("org.spockframework:spock-core:2.0-groovy-3.0")
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+    }
+}
+
+configurations.named("functionalTestImplementation") {
+    exclude(group = "org.codehaus.groovy")
+}
+
+tasks.named("check") {
+    dependsOn(testing.suites.named("functionalTest"))
+}
+
+dependencies {
+    api("com.google.guava:guava:31.0.1-jre")
+}
+
+gradlePlugin {
+    plugins {
+        create("checksumPlugin") {
+            id = "org.gradle.crypto.checksum"
+            implementationClass = "org.gradle.crypto.checksum.ChecksumPlugin"
+        }
+    }
+    testSourceSets(sourceSets.named("functionalTest").get())
+}
+
+pluginBundle {
+    vcsUrl = "https://github.com/gradle/gradle-checksum"
+    website = vcsUrl
+    plugins {
+        named("checksumPlugin") {
+            id = "org.gradle.crypto.checksum"
+            displayName = "Checksum Plugin"
+            description = "Create checksums for files in your build."
+            tags = listOf("cryptography", "hashing", "checksum", "security")
+            version = project.version as String
+        }
+    }
+}
