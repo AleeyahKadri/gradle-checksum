@@ -69,8 +69,12 @@ testing {
     }
 }
 
-configurations.named("functionalTestImplementation") {
-    exclude(group = "org.codehaus.groovy")
+// Exclude org.codehaus.groovy from functionalTest to use the Groovy version provided by the Groovy plugin
+// In Kotlin DSL, this must be done at the configuration level rather than per-dependency
+configurations {
+    named("functionalTestImplementation") {
+        exclude(group = "org.codehaus.groovy")
+    }
 }
 
 tasks.named("check") {
