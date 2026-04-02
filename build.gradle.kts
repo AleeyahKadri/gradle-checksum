@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 import org.gradle.api.plugins.jvm.JvmTestSuite
+import org.gradle.api.artifacts.ModuleDependency
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 plugins {
     groovy
@@ -37,7 +39,7 @@ System.setProperty("gradle.publish.skip.namespace.check", "true")
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion.set(JavaLanguageVersion.of(8))
     }
 }
 
@@ -55,10 +57,10 @@ testing {
             }
 
             dependencies {
-                implementation(project())
+                implementation(project)
                 implementation("org.spockframework:spock-junit4:2.0-groovy-3.0")
                 implementation("org.spockframework:spock-core:2.0-groovy-3.0") {
-                    exclude(group = "org.codehaus.groovy")
+                    (this as ModuleDependency).exclude(group = "org.codehaus.groovy")
                 }
             }
 
